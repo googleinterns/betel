@@ -2,6 +2,10 @@ import pytest
 from src.play_scraper import PlayPageScraper
 
 
+def pytest_configure():
+    pytest.FILE = "file:"
+
+
 @pytest.fixture(scope="session")
 def icon_dir(tmp_path_factory):
     return tmp_path_factory.mktemp("icon_dir")
@@ -14,4 +18,5 @@ def test_dir(tmp_path_factory):
 
 @pytest.fixture(scope="module")
 def play_scraper(icon_dir, test_dir):
-    return PlayPageScraper("file:" + str(test_dir) + "/", icon_dir)
+    base_url = pytest.FILE + str(test_dir) + "/"
+    return PlayPageScraper(base_url, icon_dir)

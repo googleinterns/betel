@@ -9,6 +9,10 @@ def _get_html(url: str) -> BeautifulSoup:
     return soup
 
 
+class PlayScrapingError(Exception):
+    """Raise when certain attributes can't be found within the Play page."""
+
+
 class PlayPageScraper:
     """A class for scraping Google Play Store web pages."""
 
@@ -26,31 +30,49 @@ class PlayPageScraper:
         self._storage_dir = storage_dir
         self._storage_dir.mkdir(exist_ok=True, parents=True)
 
-    def get_icon(self, app_id: str, directory: Path = "") -> None:
-        """Downloads the app's icon from the corresponding web page.
+    def _build_app_page_url(self, app_id: str) -> str:
+        return self._base_url + app_id
 
-        :param app_id: the id of the app.
-        :param directory: icon storage subdirectory.
-        """
-        url = self._base_url + app_id
-        html = _get_html(url)
+    def _get_details_page(self, app_id: str) -> BeautifulSoup:
+        url = self._build_app_page_url(app_id)
+        return _get_html(url)
 
+    def _scrape_icon_url(self, html: BeautifulSoup) -> str:
         icon = html.find(class_=self._ICON_CLASS)
-        src = icon["src"]
+        if icon is None:
+            raise PlayScrapingError("Icon class not found in html.")
+        return icon["src"]
 
+    def _download_icon(self, app_id: str, src: str, directory: Path) -> None:
         location = self._storage_dir / directory
-        location.mkdir(exist_ok=True)
+        location.mkdir(exist_ok=True, parents=True)
 
         urlretrieve(src, location / f"icon_{app_id}")
 
+    def _scrape_category(self, html: BeautifulSoup) -> str:
+        category = html.find(itemprop=self._CATEGORY_ITEMPROP)
+        if category is None:
+            raise PlayScrapingError("Category itemprop not found in html.")
+        return category.get_text()
+
+    def get_icon(self, app_id: str, directory: Path = "") -> None:
+        """Scrapes the app icon URL from the app's Play Store details page,
+        downloads the corresponding app icon and saves it to the specified
+        subdirectory.
+
+        :param app_id: the id of the app.
+        :param directory: icon storage subdirectory inside _storage_dir base
+        directory.
+        """
+        html = self._get_details_page(app_id)
+        src = self._scrape_icon_url(html)
+        self._download_icon(app_id, src, directory)
+
     def get_category(self, app_id: str) -> str:
-        """Scrapes app's category.
+        """Scrapes the app category from the app's Play Store details page.
 
         :param app_id: the id of the app.
         :return: the category of the app in str format
         """
-        url = self._base_url + app_id
-        html = _get_html(url)
-
-        category = html.find(itemprop=self._CATEGORY_ITEMPROP)
-        return category.get_text().lower()
+        html = self._get_details_page(app_id)
+        return self._scrape_category(html).lower()
