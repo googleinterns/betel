@@ -1,9 +1,12 @@
+from typing import Dict
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import urlretrieve, urlopen
 from bs4 import BeautifulSoup
-from .utils import get_app_icon_name, SCRAPER_INFO_FILE_NAME
-from .betel_errors import PlayScrapingError, AccessError
+from parmap import map as pmap
+from .utils import get_app_icon_name, SCRAPER_INFO_FILE_NAME, SCRAPER_LOG_FILE_NAME
+from .info_files_helpers import add_to_data, part_of_data_set, log_failure
+from .betel_errors import PlayScrapingError, AccessError, BetelError
 
 
 class PlayAppPageScraper:
@@ -26,6 +29,8 @@ class PlayAppPageScraper:
 
         self._info_file = storage_dir / SCRAPER_INFO_FILE_NAME
 
+        self._log_file = storage_dir / SCRAPER_LOG_FILE_NAME
+
     def _build_app_page_url(self, app_id: str) -> str:
         return self._base_url + "/details?id=" + app_id
 
@@ -36,7 +41,7 @@ class PlayAppPageScraper:
     def get_app_icon(self, app_id: str, subdir: Path = "") -> None:
         """Scrapes the app icon URL from the app's Play Store details page,
         downloads the corresponding app icon and saves it to
-        _storage_dir / subdir / icon_{app_id}.
+        _storage_dir / subdir /  icon_{app_id}.
 
         :param app_id: the id of the app.
         :param subdir: icon storage subdirectory inside _storage_dir base
@@ -58,8 +63,9 @@ class PlayAppPageScraper:
 
         try:
             urlretrieve(src, location / get_app_icon_name(app_id))
+
         except (HTTPError, URLError) as exception:
-            raise AccessError("Can not retrieve icon", exception)
+            raise AccessError("Can not retrieve icon.", exception)
 
     def get_app_category(self, app_id: str) -> str:
         """Scrapes the app category from the app's Play Store details page.
@@ -76,6 +82,32 @@ class PlayAppPageScraper:
             raise PlayScrapingError("Category itemprop not found in html.")
         return category.get_text()
 
+    def store_app_info(self, app_id: str) -> None:
+        """Adds an app to the data set by retrieving all the info
+        needed and appending it to the list of apps (kept in _info_file).
+
+        :param app_id: the id of the app.
+        """
+        try:
+            if not part_of_data_set(self._info_file, {"app_id": app_id}):
+                category = self.get_app_category(app_id)
+                self.get_app_icon(app_id)
+                self._write_app_info(app_id, category)
+        except BetelError as exception:
+            log_failure(self._log_file, app_id, exception)
+
+    def _write_app_info(self, app_id: str, category: str) -> None:
+        app_info = _build_app_info_dict(app_id, category)
+        add_to_data(self._info_file, app_info)
+
+    def store_apps_info(self, app_ids: [str]) -> None:
+        """Adds the specified apps to the data set by retrieving all the info
+        needed and appending them to the list of apps (kept in _info_file).
+
+        :param app_ids: array of app ids.
+        """
+        pmap(self.store_app_info, app_ids)
+
 
 def _get_html(url: str) -> BeautifulSoup:
     try:
@@ -83,4 +115,8 @@ def _get_html(url: str) -> BeautifulSoup:
         soup = BeautifulSoup(page, 'html.parser')
         return soup
     except (HTTPError, URLError) as exception:
-        raise AccessError("Can not open URL", exception)
+        raise AccessError("Can not open URL.", exception)
+
+
+def _build_app_info_dict(app_id: str, category: str) -> Dict[str, str]:
+    return {"app_id": app_id, "category": category}
