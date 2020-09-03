@@ -101,3 +101,4 @@ def _create_icon(test_dir):
     rand_icon = test_dir / ICON_NAME
     rand_icon.write_text(rand_array)
     return rand_icon
+

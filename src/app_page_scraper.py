@@ -63,7 +63,6 @@ class PlayAppPageScraper:
 
         try:
             urlretrieve(src, location / get_app_icon_name(app_id))
-
         except (HTTPError, URLError) as exception:
             raise AccessError("Can not retrieve icon.", exception)
 
