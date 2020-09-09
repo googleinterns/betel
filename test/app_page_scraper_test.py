@@ -1,4 +1,4 @@
-from pathlib import Path
+import pathlib
 import pytest
 from src import PlayScrapingError, PlayAppPageScraper, AccessError, SCRAPER_INFO_FILE_NAME
 
@@ -14,7 +14,7 @@ SIMPLE_HTML = """
 <p>Simple paragraph.</p>
 """
 
-ICON_SUBDIR = Path("icon_subdir")
+ICON_SUBDIR = pathlib.Path("icon_subdir")
 APP_ID = "com.example"
 ICON_NAME = "icon_com.example"
 EXPECTED_CATEGORY = "example"
@@ -101,4 +101,3 @@ def _create_icon(test_dir):
     rand_icon = test_dir / ICON_NAME
     rand_icon.write_text(rand_array)
     return rand_icon
-

@@ -1,4 +1,5 @@
-from src import add_to_data, part_of_data_set, read_list, log_failure, BetelError
+import pandas as pd
+from src import add_to_data, part_of_data_set, read_list
 
 DICTIONARIES = [{"a": "c", "b": "d"}, {"a": "e", "b": "f"}]
 HEADER = "a,b"
@@ -9,7 +10,8 @@ class TestInfoFilesHelpers:
     def test_add_to_data(self, test_dir):
         file = test_dir / "info"
 
-        add_to_data(file, DICTIONARIES[0])
+        data_frame = pd.DataFrame([DICTIONARIES[0]])
+        add_to_data(file, data_frame)
 
         assert file.exists()
         assert HEADER in file.read_text()
@@ -30,14 +32,4 @@ class TestInfoFilesHelpers:
 
         dict_list = read_list(file)
 
-        assert dict_list == DICTIONARIES
-
-    def test_log_failure(self, icon_dir):
-        app_id = "app_id"
-        exception = BetelError("This is an error.")
-        expected_text = f"{app_id}, {getattr(exception, 'message', repr(exception))}\n"
-        log_file = icon_dir / "logs"
-
-        log_failure(log_file, app_id, exception)
-
-        assert log_file.read_text() == expected_text
+        assert dict_list.equals(pd.DataFrame(DICTIONARIES))
