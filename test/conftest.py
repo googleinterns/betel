@@ -19,4 +19,4 @@ def test_dir(tmp_path_factory):
 @pytest.fixture
 def play_scraper(icon_dir, test_dir):
     base_url = pytest.FILE + str(test_dir) + "/"
-    return PlayAppPageScraper(base_url, icon_dir)
+    return PlayAppPageScraper(base_url, icon_dir, ["example"])

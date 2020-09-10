@@ -17,11 +17,13 @@ class PlayAppPageScraper:
     _ICON_CLASS = "T75of sHb2Xb"  # icon's tag's class
     _APP_CATEGORY_ITEMPROP = "genre"  # app's category's tag's itemprop
 
-    def __init__(self, base_url: str, storage_dir: pathlib.Path):
+    def __init__(self, base_url: str, storage_dir: pathlib.Path, category_filter: [str] = None):
         """Constructor.
 
         :param base_url: base url of the apps store.
         :param storage_dir: main storage directory for retrieved info.
+        :param category_filter: a list of categories whose apps are stored
+        (instead of the whole input)
         """
         self._base_url = base_url
 
@@ -32,6 +34,8 @@ class PlayAppPageScraper:
 
         self._log_file = storage_dir / SCRAPER_LOG_FILE_NAME
         logging.basicConfig(filename=self._log_file, filemode="a+")
+
+        self._category_filter = category_filter
 
     def _build_app_page_url(self, app_id: str) -> str:
         return self._base_url + "/details?id=" + app_id
@@ -86,14 +90,17 @@ class PlayAppPageScraper:
     def store_app_info(self, app_id: str) -> None:
         """Adds an app to the data set by retrieving all the info
         needed and appending it to the list of apps (kept in _info_file).
+        The app is only stored in the case that its category is in the
+        _category_filter list.
 
         :param app_id: the id of the app.
         """
         try:
             if not part_of_data_set(self._info_file, {"app_id": app_id}):
                 category = self.get_app_category(app_id)
-                self.get_app_icon(app_id)
-                self._write_app_info(app_id, category)
+                if self._category_filter is None or category in self._category_filter:
+                    self.get_app_icon(app_id)
+                    self._write_app_info(app_id, category)
         except BetelError as exception:
             info = f"{app_id}, {getattr(exception, 'message', repr(exception))}"
             logging.warning(info)

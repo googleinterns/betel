@@ -10,6 +10,10 @@ CATEGORY_HTML = """
 <a itemprop="genre">Example</a>
 """
 
+FILTERED_CATEGORY_HTML = """
+<a itemprop="genre">Filtered</a>
+"""
+
 SIMPLE_HTML = """
 <p>Simple paragraph.</p>
 """
@@ -84,6 +88,16 @@ class TestAppPageScraper:
         assert retrieved_icon.exists()
         assert rand_icon.read_text() == retrieved_icon.read_text()
         assert expected_info in info_file.read_text()
+
+    def test_store_app_info_filter(self, play_scraper, test_dir, icon_dir):
+        _create_html_file(test_dir, ICON_HTML + FILTERED_CATEGORY_HTML, icon_src=True)
+        _create_icon(test_dir)
+
+        play_scraper.store_app_info(APP_ID)
+
+        retrieved_icon = icon_dir / ICON_NAME
+
+        assert not retrieved_icon.exists()
 
 
 def _create_html_file(test_dir, text, icon_src=False):
