@@ -1,5 +1,5 @@
 import pandas as pd
-from src import add_to_data, part_of_data_set, read_list
+from src import info_files_helpers
 
 DICTIONARIES = [{"a": "c", "b": "d"}, {"a": "e", "b": "f"}]
 HEADER = "a,b"
@@ -11,7 +11,7 @@ class TestInfoFilesHelpers:
         file = test_dir / "info"
 
         data_frame = pd.DataFrame([DICTIONARIES[0]])
-        add_to_data(file, data_frame)
+        info_files_helpers.add_to_data(file, data_frame)
 
         assert file.exists()
         assert HEADER in file.read_text()
@@ -22,14 +22,17 @@ class TestInfoFilesHelpers:
 
         file.write_text(f"{HEADER}\n{ROWS[0]}")
 
-        assert part_of_data_set(file, DICTIONARIES[0])
-        assert not part_of_data_set(file, DICTIONARIES[1])
+        present_data_frame = pd.DataFrame([DICTIONARIES[0]])
+        missing_data_frame = pd.DataFrame([DICTIONARIES[1]])
+
+        assert info_files_helpers.part_of_data_set(file, present_data_frame)
+        assert not info_files_helpers.part_of_data_set(file, missing_data_frame)
 
     def test_read_list(self, test_dir):
         file = test_dir / "info"
 
         file.write_text(f"{HEADER}\n{ROWS[0]}\n{ROWS[1]}")
 
-        dict_list = read_list(file)
+        content = info_files_helpers.read_csv_file(file)
 
-        assert dict_list.equals(pd.DataFrame(DICTIONARIES))
+        assert content.equals(pd.DataFrame(DICTIONARIES))

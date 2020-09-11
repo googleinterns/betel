@@ -5,9 +5,9 @@ import logging
 import bs4
 import parmap
 import pandas as pd
-from .utils import get_app_icon_name, SCRAPER_INFO_FILE_NAME, SCRAPER_LOG_FILE_NAME
-from .info_files_helpers import add_to_data, part_of_data_set
-from .betel_errors import PlayScrapingError, AccessError, BetelError
+from src import utils
+from src import info_files_helpers
+from src import betel_errors
 
 
 class PlayAppPageScraper:
@@ -30,9 +30,9 @@ class PlayAppPageScraper:
         self._storage_dir = storage_dir
         self._storage_dir.mkdir(exist_ok=True, parents=True)
 
-        self._info_file = storage_dir / SCRAPER_INFO_FILE_NAME
+        self._info_file = storage_dir / utils.SCRAPER_INFO_FILE_NAME
 
-        self._log_file = storage_dir / SCRAPER_LOG_FILE_NAME
+        self._log_file = storage_dir / utils.SCRAPER_LOG_FILE_NAME
         logging.basicConfig(filename=self._log_file, filemode="a+")
 
         self._category_filter = category_filter
@@ -60,17 +60,17 @@ class PlayAppPageScraper:
     def _scrape_icon_url(self, html: bs4.BeautifulSoup) -> str:
         icon = html.find(class_=self._ICON_CLASS)
         if icon is None:
-            raise PlayScrapingError("Icon class not found in html.")
+            raise betel_errors.PlayScrapingError("Icon class not found in html.")
         return icon["src"]
 
-    def _download_icon(self, app_id: str, src: str, directory: pathlib.Path) -> None:
+    def _download_icon(self, app_id: str, source: str, directory: pathlib.Path) -> None:
         location = self._storage_dir / directory
         location.mkdir(exist_ok=True, parents=True)
 
         try:
-            urllib.request.urlretrieve(src, location / get_app_icon_name(app_id))
+            urllib.request.urlretrieve(source, location / utils.get_app_icon_name(app_id))
         except (urllib.error.HTTPError, urllib.error.URLError) as exception:
-            raise AccessError("Can not retrieve icon.", exception)
+            raise betel_errors.AccessError("Can not retrieve icon.", exception)
 
     def get_app_category(self, app_id: str) -> str:
         """Scrapes the app category from the app's Play Store details page.
@@ -84,7 +84,7 @@ class PlayAppPageScraper:
     def _scrape_category(self, html: bs4.BeautifulSoup) -> str:
         category = html.find(itemprop=self._APP_CATEGORY_ITEMPROP)
         if category is None:
-            raise PlayScrapingError("Category itemprop not found in html.")
+            raise betel_errors.PlayScrapingError("Category itemprop not found in html.")
         return category.get_text()
 
     def store_app_info(self, app_id: str) -> None:
@@ -95,19 +95,24 @@ class PlayAppPageScraper:
 
         :param app_id: the id of the app.
         """
+        search_data_frame = utils.get_app_search_data_frame(app_id)
+        part_of_data_set = (
+            info_files_helpers.part_of_data_set(self._info_file, search_data_frame)
+        )
+
         try:
-            if not part_of_data_set(self._info_file, {"app_id": app_id}):
+            if not part_of_data_set:
                 category = self.get_app_category(app_id)
                 if self._category_filter is None or category in self._category_filter:
                     self.get_app_icon(app_id)
                     self._write_app_info(app_id, category)
-        except BetelError as exception:
+        except betel_errors.BetelError as exception:
             info = f"{app_id}, {getattr(exception, 'message', repr(exception))}"
             logging.warning(info)
 
     def _write_app_info(self, app_id: str, category: str) -> None:
         app_info = _build_app_info_data_frame(app_id, category)
-        add_to_data(self._info_file, app_info)
+        info_files_helpers.add_to_data(self._info_file, app_info)
 
     def store_apps_info(self, app_ids: [str]) -> None:
         """Adds the specified apps to the data set by retrieving all the info
@@ -125,7 +130,7 @@ def _get_html(url: str) -> bs4.BeautifulSoup:
         soup = bs4.BeautifulSoup(page, 'html.parser')
         return soup
     except (urllib.error.HTTPError, urllib.error.URLError) as exception:
-        raise AccessError("Can not open URL.", exception)
+        raise betel_errors.AccessError("Can not open URL.", exception)
 
 
 def _build_app_info_data_frame(app_id: str, category: str) -> pd.DataFrame:

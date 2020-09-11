@@ -1,6 +1,8 @@
 import pathlib
 import pytest
-from src import PlayScrapingError, PlayAppPageScraper, AccessError, SCRAPER_INFO_FILE_NAME
+from src import app_page_scraper
+from src import betel_errors
+from src import utils
 
 ICON_HTML = """
 <img src="%s" class="T75of sHb2Xb">
@@ -47,7 +49,7 @@ class TestAppPageScraper:
     def test_missing_icon_class(self, play_scraper, test_dir):
         _create_html_file(test_dir, SIMPLE_HTML)
 
-        with pytest.raises(PlayScrapingError) as exc:
+        with pytest.raises(betel_errors.PlayScrapingError) as exc:
             play_scraper.get_app_icon(APP_ID, ICON_SUBDIR)
 
         assert str(exc.value) == "Icon class not found in html."
@@ -55,7 +57,7 @@ class TestAppPageScraper:
     def test_missing_category_itemprop(self, play_scraper, test_dir):
         _create_html_file(test_dir, SIMPLE_HTML)
 
-        with pytest.raises(PlayScrapingError) as exc:
+        with pytest.raises(betel_errors.PlayScrapingError) as exc:
             play_scraper.get_app_category(APP_ID)
 
         assert str(exc.value) == "Category itemprop not found in html."
@@ -63,16 +65,20 @@ class TestAppPageScraper:
     def test_invalid_base_url(self, icon_dir):
         random_url = "https://127.0.0.1/betel-test-invalid-base-url-835AHD/"
 
-        play_scraper = PlayAppPageScraper(random_url, icon_dir)
+        play_scraper = app_page_scraper.PlayAppPageScraper(random_url, icon_dir)
 
-        with pytest.raises(AccessError):
-            play_scraper.get_app_category("com.invalid.base.url")
+        with pytest.raises(betel_errors.AccessError) as exc:
+            play_scraper.get_app_category(APP_ID)
+
+        assert "Can not open URL." in str(exc.value)
 
     def test_invalid_icon_url(self, play_scraper, test_dir):
         _create_html_file(test_dir, ICON_HTML, icon_src=True)
 
-        with pytest.raises(AccessError):
-            play_scraper.get_app_icon("com.invalid.icon.url")
+        with pytest.raises(betel_errors.AccessError) as exc:
+            play_scraper.get_app_icon(APP_ID)
+
+        assert "Can not retrieve icon." in str(exc.value)
 
     def test_store_app_info(self, play_scraper, test_dir, icon_dir):
         expected_info = f"{APP_ID},{EXPECTED_CATEGORY}"
@@ -83,7 +89,7 @@ class TestAppPageScraper:
         play_scraper.store_app_info(APP_ID)
 
         retrieved_icon = icon_dir / ICON_NAME
-        info_file = icon_dir / SCRAPER_INFO_FILE_NAME
+        info_file = icon_dir / utils.SCRAPER_INFO_FILE_NAME
 
         assert retrieved_icon.exists()
         assert rand_icon.read_text() == retrieved_icon.read_text()
