@@ -18,6 +18,29 @@ ICON_SUBDIR = Path("icon_subdir")
 APP_ID = "com.example"
 ICON_NAME = "icon_com.example"
 
+FILE = "file:"
+
+
+@pytest.fixture
+def icon_dir(tmp_path_factory):
+    return tmp_path_factory.mktemp("icon_dir")
+
+
+@pytest.fixture
+def test_dir(tmp_path_factory):
+    return tmp_path_factory.mktemp("test_dir")
+
+
+@pytest.fixture
+def play_scraper(icon_dir, test_dir):
+    base_url = FILE + str(test_dir) + "/"
+    return PlayAppPageScraper(base_url, icon_dir)
+
+
+@pytest.fixture
+def input_dir(tmp_path_factory):
+    return tmp_path_factory.mktemp("input_dir")
+
 
 class TestAppPageScraper:
     def test_get_icon(self, test_dir, icon_dir, play_scraper):
@@ -75,7 +98,7 @@ def _create_html_file(test_dir, text, icon_html=False):
     html_file = test_dir / "details?id=com.example"
 
     if icon_html:
-        html_img_src = pytest.FILE + str(test_dir / ICON_NAME)
+        html_img_src = FILE + str(test_dir / ICON_NAME)
         text = text % html_img_src
 
     html_file.write_text(text)
