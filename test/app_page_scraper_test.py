@@ -1,8 +1,8 @@
 import pathlib
 import pytest
-from src import app_page_scraper
-from src import betel_errors
-from src import utils
+from betel import app_page_scraper
+from betel import betel_errors
+from betel import utils
 
 ICON_HTML = """
 <img src="%s" class="T75of sHb2Xb">

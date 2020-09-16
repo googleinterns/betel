@@ -5,9 +5,9 @@ import logging
 import bs4
 import parmap
 import pandas as pd
-from src import utils
-from src import info_files_helpers
-from src import betel_errors
+from betel import utils
+from betel import info_files_helpers
+from betel import betel_errors
 
 
 class PlayAppPageScraper:

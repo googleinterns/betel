@@ -1,5 +1,5 @@
 import pandas as pd
-from src import info_files_helpers
+from betel import info_files_helpers
 
 DICTIONARIES = [{"a": "c", "b": "d"}, {"a": "e", "b": "f"}]
 HEADER = "a,b"
