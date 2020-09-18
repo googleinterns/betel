@@ -25,6 +25,29 @@ APP_ID = "com.example"
 ICON_NAME = "icon_com.example"
 EXPECTED_CATEGORY = "example"
 
+FILE = "file:"
+
+
+@pytest.fixture
+def icon_dir(tmp_path_factory):
+    return tmp_path_factory.mktemp("icon_dir")
+
+
+@pytest.fixture
+def test_dir(tmp_path_factory):
+    return tmp_path_factory.mktemp("test_dir")
+
+
+@pytest.fixture
+def play_scraper(icon_dir, test_dir):
+    base_url = FILE + str(test_dir) + "/"
+    return app_page_scraper.PlayAppPageScraper(base_url, icon_dir, ["example"])
+
+
+@pytest.fixture
+def input_dir(tmp_path_factory):
+    return tmp_path_factory.mktemp("input_dir")
+
 
 class TestAppPageScraper:
     def test_get_icon(self, play_scraper, test_dir, icon_dir):
@@ -37,14 +60,14 @@ class TestAppPageScraper:
         read_icon = icon_dir / ICON_SUBDIR / ICON_NAME
 
         assert read_icon.exists()
-        assert rand_icon.read_text() == read_icon.read_text()
+        assert read_icon.read_text() == rand_icon.read_text()
 
     def test_get_category(self, play_scraper, test_dir):
         _create_html_file(test_dir, CATEGORY_HTML)
 
         genre = play_scraper.get_app_category(APP_ID)
 
-        assert EXPECTED_CATEGORY == genre
+        assert genre == EXPECTED_CATEGORY
 
     def test_missing_icon_class(self, play_scraper, test_dir):
         _create_html_file(test_dir, SIMPLE_HTML)
@@ -110,7 +133,7 @@ def _create_html_file(test_dir, text, icon_src=False):
     html_file = test_dir / "details?id=com.example"
 
     if icon_src:
-        html_img_src = pytest.FILE + str(test_dir / ICON_NAME)
+        html_img_src = FILE + str(test_dir / ICON_NAME)
         text = text % html_img_src
 
     html_file.write_text(text)
@@ -120,4 +143,5 @@ def _create_icon(test_dir):
     rand_array = str([15, 934, 8953, 409, 32])
     rand_icon = test_dir / ICON_NAME
     rand_icon.write_text(rand_array)
+
     return rand_icon
