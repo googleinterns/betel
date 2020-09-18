@@ -14,7 +14,7 @@ class IconBuilder:
     def create_icons(self, num_icons: int, num_categories: int = 1):
         """ Creates num_icons icons equally distributed in num_categories
         categories (the last category has more icons in case of inexact
-        division.
+        division).
 
         :param num_icons: number of icons to be created
         :param num_categories: number of categories in which to

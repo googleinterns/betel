@@ -1,6 +1,6 @@
 import collections
-import pytest
 from test import icon_builder as ib
+import pytest
 from src import ClassifierSequence
 
 
@@ -38,7 +38,7 @@ class TestClassifierSequence:
 
     def test_all_icons_have_expected_size(self, icon_builder):
         classifier_sequence = _get_sequence(icon_builder, batch_size=1, num_icons=1)
-        expected_icon_size = (1, 192, 192, 3)
+        expected_icon_size = (1, 192, 192, 3)  # (batch_size, width, height, channels)
 
         assert classifier_sequence[0][0].shape == expected_icon_size
 
@@ -47,18 +47,19 @@ class TestClassifierSequence:
         (12, {0: 4, 1: 4, 2: 4}),  # 12 icons, 3 categories => 4,4,4 icons/category
     ])
     def test_categories_sizes(self, icon_builder, num_icons, expected_categories_sizes):
-        classifier_sequence = _get_sequence(icon_builder, batch_size=5, num_icons=num_icons, num_categories=3)
+        classifier_sequence = _get_sequence(icon_builder, batch_size=5,
+                                            num_icons=num_icons, num_categories=3)
 
         y_batches = []
 
         for _, batch_y in classifier_sequence:
             y_batches.extend(batch_y)
 
-        y_batches = y_batches[: num_icons]
+        y_batches = y_batches[:num_icons]
 
         counter = collections.Counter(y_batches)
 
-        assert expected_categories_sizes == counter
+        assert counter == expected_categories_sizes
 
 
 def _get_sequence(icon_builder, batch_size, num_icons, num_categories=1):

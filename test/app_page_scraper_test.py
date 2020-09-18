@@ -52,7 +52,7 @@ class TestAppPageScraper:
 
         read_icon = icon_dir / ICON_SUBDIR / ICON_NAME
         read_array = read_icon.read_text()
-        assert rand_array == read_array
+        assert read_array == rand_array
 
     def test_get_category(self, play_scraper, test_dir):
         expected_genre = "example"
@@ -61,7 +61,7 @@ class TestAppPageScraper:
 
         genre = play_scraper.get_app_category(APP_ID)
 
-        assert expected_genre == genre
+        assert genre == expected_genre
 
     def test_missing_icon_class(self, play_scraper, test_dir):
         _create_html_file(test_dir, SIMPLE_HTML)

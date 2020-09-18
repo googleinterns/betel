@@ -1,16 +1,13 @@
 import pathlib
 import math
-import numpy as np
 from typing import Dict, Tuple, List
+import numpy as np
 from tensorflow import keras
 from PIL import Image, ImageOps
 
 
 class ClassifierSequence(keras.utils.Sequence):
     """A class for sequencing the classifier's input data."""
-
-    category_id_to_name: Dict[int, str]
-    category_name_to_id: Dict[str, int]
 
     def __init__(self, input_dir: pathlib.Path, batch_size: int,
                  target_img_dim: int, shuffle: bool = True):
@@ -22,7 +19,7 @@ class ClassifierSequence(keras.utils.Sequence):
         :param shuffle: whether the input data is shuffled on epoch end or not.
         """
         if not input_dir.exists():
-            raise ValueError("Input directory does not exist.")
+            raise ValueError(f"Input directory does not exist: {input_dir}.")
 
         self._input_dir = input_dir
         self._batch_size = batch_size
@@ -32,8 +29,8 @@ class ClassifierSequence(keras.utils.Sequence):
 
         categories = self._get_categories()
 
-        self.category_id_to_name = dict(enumerate(categories))
-        self.category_name_to_id = {y: x for x, y in enumerate(categories)}
+        self.category_id_to_name: Dict[int, str] = dict(enumerate(categories))
+        self.category_name_to_id: Dict[str, int] = {y: x for x, y in enumerate(categories)}
 
     def __len__(self) -> int:
         return math.ceil(len(self._app_icons) / self._batch_size)
