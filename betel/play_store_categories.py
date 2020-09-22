@@ -2,7 +2,15 @@ import enum
 
 
 class Categories(enum.Enum):
-    """Enum for the categories found in Google Play Store."""
+    """Enum for the categories found in Google Play Store.
+
+    The enum members are bound to category names (in string format)
+    as expected to be scraped from the Google Play Store.
+
+    These can be used for specifying the filtering parameter of the
+    PlayAppPageScraper or the classes desired for classification
+    (when building the data set with the ClassifierDataSetBuilder).
+    """
 
     ART_AND_DESIGN = "art & design"
     AUGMENTED_REALITY = "augmented reality"
