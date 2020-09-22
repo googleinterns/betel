@@ -9,14 +9,18 @@ from betel import data_set_builder
 class ClassifierDataSetBuilder(data_set_builder.DataSetBuilder):
     """A class for splitting classifier data into train-validation-test sets."""
 
-    def __init__(self, input_dir: pathlib.Path, storage_dir: pathlib.Path, classes: [str] = None):
+    def __init__(self, input_dir: pathlib.Path, storage_dir: pathlib.Path,
+                 split_ratio: (float, float, float) = (0.7, 0.15, 0.15),
+                 classes: [str] = None):
         """Constructor.
 
         :param input_dir: data to be split (output of the scraper)
         :param storage_dir: storage directory for split data sets
-        :param classes: the classes desired for the classifier
+        :param split_ratio: the ratio for train-validation-test data sets
+        :param classes: the classes desired for the classifier (should be
+        Google Play Store categories)
         """
-        super().__init__(input_dir, storage_dir)
+        super().__init__(input_dir, storage_dir, split_ratio)
 
         # directory to store the info about the split
         self._info_dir = storage_dir / utils.CLASSIFIER_DATA_BUILDER_INFO_DIR

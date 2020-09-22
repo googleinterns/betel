@@ -2,6 +2,7 @@ import pathlib
 import abc
 from typing import Dict
 import pandas as pd
+from sklearn import model_selection
 from betel import utils
 from betel import info_files_helpers
 
@@ -11,17 +12,22 @@ class DataSetBuilder(metaclass=abc.ABCMeta):
 
     _RANDOM_SEED = 2579  # seed for random splitting
 
-    def __init__(self, input_dir: pathlib.Path, storage_dir: pathlib.Path):
+    def __init__(self, input_dir: pathlib.Path, storage_dir: pathlib.Path,
+                 split_ratio: (float, float, float) = (0.7, 0.15, 0.15)):
         """"Constructor.
 
         :param input_dir: data to be split (output of the scraper)
         :param storage_dir: storage directory for split data sets
+        :param split_ratio: the ratio for train-validation-test data sets
         """
         self._storage_dir = storage_dir
         self._storage_dir.mkdir(exist_ok=True, parents=True)
 
         self._input_dir = input_dir
         self._input_file = input_dir / utils.SCRAPER_INFO_FILE_NAME
+
+        normalised_split_ratio = (elem / sum(split_ratio) for elem in split_ratio)
+        self._train_ratio, self._val_ratio, self._test_ratio = normalised_split_ratio
 
     def split(self, data: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         """Randomly splits a list of data into 3
@@ -33,11 +39,12 @@ class DataSetBuilder(metaclass=abc.ABCMeta):
         app_list = self._sort(data)
         app_list = app_list.sample(frac=1, random_state=self._RANDOM_SEED)
 
-        index_1 = int(0.7 * len(app_list))
-        index_2 = int(0.85 * len(app_list))
-        train = app_list.iloc[:index_1]
-        validation = app_list.iloc[index_1:index_2]
-        test = app_list.iloc[index_2:]
+        normalised_test_ratio = self._test_ratio / (self._val_ratio + self._test_ratio)
+
+        train, rest = model_selection.train_test_split(app_list, train_size=self._train_ratio,
+                                                       shuffle=False)
+        validation, test = model_selection.train_test_split(rest, test_size=normalised_test_ratio,
+                                                            shuffle=False)
 
         split = {
             "train": train,

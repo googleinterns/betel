@@ -6,7 +6,7 @@ from betel import utils
 
 CSV = """app_id,category
 com.example,example
-com.test,test
+com.test,example
 com.play,play
 com.store,store
 com.page,page"""
@@ -17,7 +17,9 @@ SPLIT = {'train': pd.DataFrame([{'app_id': 'com.example', 'category': 'example'}
                                 {'app_id': 'com.page', 'category': 'page'},
                                 {'app_id': 'com.store', 'category': 'store'}]),
          'validation': pd.DataFrame([{'app_id': 'com.play', 'category': 'play'}]),
-         'test': pd.DataFrame([{'app_id': 'com.test', 'category': 'test'}])}
+         'test': pd.DataFrame([{'app_id': 'com.test', 'category': 'example'}])}
+
+CLASSES = ["example", "play"]
 
 
 @pytest.fixture
@@ -35,6 +37,39 @@ def classifier_builder(input_dir, storage_dir):
     return classifier_data_set_builder.ClassifierDataSetBuilder(input_dir, storage_dir)
 
 
+@pytest.fixture
+def expected_icons(storage_dir):
+    return [
+        storage_dir / "train" / "example" / "icon_com.example",
+        storage_dir / "train" / "page" / "icon_com.page",
+        storage_dir / "train" / "store" / "icon_com.store",
+        storage_dir / "validation" / "play" / "icon_com.play",
+        storage_dir / "test" / "example" / "icon_com.test"
+    ]
+
+
+@pytest.fixture
+def expected_icons_when_classes_specified(storage_dir):
+    return [
+        storage_dir / "train" / "example" / "icon_com.example",
+        storage_dir / "train" / "others" / "icon_com.page",
+        storage_dir / "train" / "others" / "icon_com.store",
+        storage_dir / "validation" / "play" / "icon_com.play",
+        storage_dir / "test" / "example" / "icon_com.test"
+    ]
+
+
+@pytest.fixture
+def expected_info(storage_dir):
+    return [
+        {"file": storage_dir / "info" / "example", "info": "com.example,train"},
+        {"file": storage_dir / "info" / "page", "info": "com.page,train"},
+        {"file": storage_dir / "info" / "store", "info": "com.store,train"},
+        {"file": storage_dir / "info" / "play", "info": "com.play,validation"},
+        {"file": storage_dir / "info" / "example", "info": "com.test,test"}
+    ]
+
+
 class TestClassifierDataSetBuilder:
     def test_split(self, classifier_builder):
         split = classifier_builder.split(APP_LIST)
@@ -45,7 +80,7 @@ class TestClassifierDataSetBuilder:
 
         assert not all(split[data_set].equals(sorted_split[data_set]) for data_set in split)
 
-    def test_expected_locations(self, classifier_builder, input_dir, storage_dir, mocker):
+    def test_expected_locations(self, classifier_builder, input_dir, expected_icons, mocker):
         mocker.patch.object(
             classifier_data_set_builder.ClassifierDataSetBuilder,
             'split',
@@ -55,13 +90,13 @@ class TestClassifierDataSetBuilder:
         input_file.write_text(CSV)
 
         _create_icons(APP_LIST, input_dir)
-        expected_icons = _get_expected_icons(storage_dir)
 
         classifier_builder.split_and_build_data_sets()
 
         assert all(icon.exists() for icon in expected_icons)
 
-    def test_expected_locations_with_classes(self, input_dir, storage_dir, mocker):
+    def test_expected_locations_with_specified_classes(self, input_dir,
+                storage_dir, expected_icons_when_classes_specified, mocker):
         mocker.patch.object(
             classifier_data_set_builder.ClassifierDataSetBuilder,
             'split',
@@ -70,20 +105,17 @@ class TestClassifierDataSetBuilder:
         input_file = input_dir / utils.SCRAPER_INFO_FILE_NAME
         input_file.write_text(CSV)
 
-        classes = ["example"]
-
         _create_icons(APP_LIST, input_dir)
-        expected_icons = _get_expected_icons(storage_dir, classes)
 
         classifier_builder = classifier_data_set_builder.ClassifierDataSetBuilder(
-            input_dir, storage_dir, classes=classes
+            input_dir, storage_dir, classes=CLASSES
         )
 
         classifier_builder.split_and_build_data_sets()
 
-        assert all(icon.exists() for icon in expected_icons)
+        assert all(icon.exists() for icon in expected_icons_when_classes_specified)
 
-    def test_info_file_content(self, classifier_builder, input_dir, storage_dir, mocker):
+    def test_info_file_content(self, classifier_builder, input_dir, expected_info, mocker):
         mocker.patch.object(
             classifier_data_set_builder.ClassifierDataSetBuilder,
             'split',
@@ -91,8 +123,6 @@ class TestClassifierDataSetBuilder:
 
         input_file = input_dir / utils.SCRAPER_INFO_FILE_NAME
         input_file.write_text(CSV)
-
-        expected_info = _get_expected_info(storage_dir)
 
         _create_icons(APP_LIST, input_dir)
 
@@ -105,27 +135,3 @@ def _create_icons(app_list, input_dir):
     for _, app in app_list.iterrows():
         icon_name = utils.get_app_icon_name(app["app_id"])
         (input_dir / icon_name).touch()
-
-
-def _get_expected_icons(storage_dir, classes=None):
-    expected_icons = []
-    for data_set in SPLIT:
-        for _, app in SPLIT[data_set].iterrows():
-            icon_name = utils.get_app_icon_name(app["app_id"])
-            category = app["category"]
-            if classes is not None:
-                category = category if category in classes else "others"
-            expected_location = storage_dir / data_set / category
-            expected_icons.append(expected_location / icon_name)
-    return expected_icons
-
-
-def _get_expected_info(storage_dir):
-    expected_info = []
-    for data_set in SPLIT:
-        for _, app in SPLIT[data_set].iterrows():
-            file = storage_dir / "info" / app["category"]
-            app_id = app["app_id"]
-            info = f"{app_id},{data_set}"
-            expected_info.append({"file": file, "info": info})
-    return expected_info
