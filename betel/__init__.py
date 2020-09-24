@@ -3,3 +3,4 @@ import betel.betel_errors
 import betel.utils
 import betel.info_files_helpers
 import betel.classifier_sequence
+import betel.play_store_categories
