@@ -1,9 +1,15 @@
+import pytest
 import pandas as pd
 from betel import info_files_helpers
 
 DICTIONARIES = [{"a": "c", "b": "d"}, {"a": "e", "b": "f"}]
 HEADER = "a,b"
 ROWS = ["c,d", "e,f"]
+
+
+@pytest.fixture
+def test_dir(tmp_path_factory):
+    return tmp_path_factory.mktemp("test_dir")
 
 
 class TestInfoFilesHelpers:
