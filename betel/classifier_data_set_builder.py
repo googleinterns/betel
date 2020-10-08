@@ -14,7 +14,9 @@ class ClassifierDataSetBuilder(data_set_builder.DataSetBuilder):
                  classes: [str] = None):
         """Constructor.
 
-        :param input_dir: data to be split (output of the scraper)
+        :param input_dir: data to be split (output of the scraper,
+        meaning a directory containing the input icons and a csv file
+        describing the whole data set)
         :param storage_dir: storage directory for split data sets
         :param split_ratio: the ratio for train-validation-test data sets
         :param classes: the classes desired for the classifier (should be

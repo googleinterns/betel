@@ -16,7 +16,9 @@ class DataSetBuilder(metaclass=abc.ABCMeta):
                  split_ratio: (float, float, float) = (0.7, 0.15, 0.15)):
         """"Constructor.
 
-        :param input_dir: data to be split (output of the scraper)
+        :param input_dir: data to be split (output of the scraper,
+        meaning a directory containing the input icons and a csv file
+        describing the whole data set)
         :param storage_dir: storage directory for split data sets
         :param split_ratio: the ratio for train-validation-test data sets
         """
@@ -55,7 +57,9 @@ class DataSetBuilder(metaclass=abc.ABCMeta):
         return split
 
     def split_and_build_data_sets(self) -> None:
-        """Splits and builds the train-validation-test data sets."""
+        """Splits the data into train-validation-test sets
+        and builds the corresponding directory structures.
+        """
         app_list = info_files_helpers.read_csv_file(self._input_file)
 
         split = self.split(app_list)
