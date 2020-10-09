@@ -1,5 +1,8 @@
+"""Module for defining and training the classifier.
+Commented lines represent different things tried during the project."""
+
 import datetime
-from pathlib import Path
+from typing import Tuple
 import tensorflow as tf
 from tensorflow.keras import optimizers
 from tensorflow.keras.models import Model
@@ -12,69 +15,74 @@ from tensorflow.keras.layers import Input, Dense, GlobalAveragePooling2D, \
     BatchNormalization, ReLU, LayerNormalization
 from betel import classifier_sequence
 
-i = Input([None, None, 3], dtype=tf.uint8)
-x = tf.cast(i, tf.float32)
-x = preprocess_input(x)
 
-# base_model = MobileNetV2(include_top=False, weights='imagenet', input_shape=(192, 192, 3))
-# base_model = ResNet50(include_top=False, weights='imagenet', input_shape=(192, 192, 3))
-base_model = ResNet152V2(include_top=False, weights='imagenet', input_shape=(192, 192, 3))
-x = base_model(x)
+def define_model() -> Tuple[Model, Model]:
+    """Defines the architecture of the model."""
+    i = Input([None, None, 3], dtype=tf.uint8)
+    x = tf.cast(i, tf.float32)
+    x = preprocess_input(x)
 
-x = GlobalAveragePooling2D()(x)
-x = Dense(512, kernel_regularizer='l2')(x)
-x = BatchNormalization()(x)
-x = ReLU()(x)
-# x = LayerNormalization()(x)
-# x = Dense(256, kernel_regularizer='l2')(x)
-# x = BatchNormalization()(x)
-# x = ReLU()(x)
-# x = LayerNormalization()(x)
-x = Dense(64, kernel_regularizer='l2')(x)
-x = BatchNormalization()(x)
-x = ReLU()(x)
-# x = LayerNormalization()(x)
-predictions = Dense(1, activation='sigmoid', kernel_regularizer='l2')(x)
+    # base_model = MobileNetV2(include_top=False, weights='imagenet', input_shape=(192, 192, 3))
+    # base_model = ResNet50(include_top=False, weights='imagenet', input_shape=(192, 192, 3))
+    base_model = ResNet152V2(include_top=False, weights='imagenet', input_shape=(192, 192, 3))
+    x = base_model(x)
 
-model = Model(inputs=[i], outputs=predictions)
+    x = GlobalAveragePooling2D()(x)
+    x = Dense(512, kernel_regularizer='l2')(x)
+    x = BatchNormalization()(x)
+    x = ReLU()(x)
+    # x = LayerNormalization()(x)
+    # x = Dense(256, kernel_regularizer='l2')(x)
+    # x = BatchNormalization()(x)
+    # x = ReLU()(x)
+    # x = LayerNormalization()(x)
+    x = Dense(64, kernel_regularizer='l2')(x)
+    x = BatchNormalization()(x)
+    x = ReLU()(x)
+    # x = LayerNormalization()(x)
+    predictions = Dense(1, activation='sigmoid', kernel_regularizer='l2')(x)
 
-for layer in base_model.layers:
-    layer.trainable = False
+    model = Model(inputs=[i], outputs=predictions)
 
-opt = optimizers.SGD(learning_rate=0.00001, momentum=0.8, clipnorm=1)
-# opt = optimizers.Adam(learning_rate=0.000001)
+    return model, base_model
 
-model.compile(optimizer=opt,
-              loss='binary_crossentropy',
-              metrics=['accuracy', metrics.Recall(),
-                       metrics.Precision(), metrics.FalsePositives(),
-                       metrics.FalseNegatives()])
 
-log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-tensorboard_callback = callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+def train_model(model: Model, base_model: Model, train_gen: classifier_sequence.ClassifierSequence,
+                val_gen: classifier_sequence.ClassifierSequence) -> None:
+    """Trains the model on the given data sets."""
+    for layer in base_model.layers:
+        layer.trainable = False
 
-train_gen = classifier_sequence.ClassifierSequence(Path("./dataset_3/train"), 32, 192)
-val_gen = classifier_sequence.ClassifierSequence(Path("./dataset_3/validation"), 32, 192)
-# test_gen = classifier_sequence.ClassifierSequence(Path("./dataset_3/test"), 32, 192)
+    opt = optimizers.SGD(learning_rate=0.00001, momentum=0.8, clipnorm=1)
+    # opt = optimizers.Adam(learning_rate=0.000001)
 
-model.fit(train_gen,
-          validation_data=val_gen,
-          epochs=60,
-          callbacks=[tensorboard_callback])
+    model.compile(optimizer=opt,
+                  loss='binary_crossentropy',
+                  metrics=['accuracy', metrics.Recall(),
+                           metrics.Precision(), metrics.FalsePositives(),
+                           metrics.FalseNegatives()])
 
-for layer in base_model.layers:
-    layer.trainable = True
+    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-opt = optimizers.SGD(learning_rate=0.00001, momentum=0.8, clipnorm=1)
+    model.fit(train_gen,
+              validation_data=val_gen,
+              epochs=60,
+              callbacks=[tensorboard_callback])
 
-model.compile(optimizer=opt,
-              loss='binary_crossentropy',
-              metrics=['accuracy', metrics.Recall(),
-                       metrics.Precision(), metrics.FalsePositives(),
-                       metrics.FalseNegatives()])
+    for layer in base_model.layers:
+        layer.trainable = True
 
-model.fit(train_gen,
-          validation_data=val_gen,
-          epochs=120,
-          initial_epoch=60,
-          callbacks=[tensorboard_callback])
+    opt = optimizers.SGD(learning_rate=0.00001, momentum=0.8, clipnorm=1)
+
+    model.compile(optimizer=opt,
+                  loss='binary_crossentropy',
+                  metrics=['accuracy', metrics.Recall(),
+                           metrics.Precision(), metrics.FalsePositives(),
+                           metrics.FalseNegatives()])
+
+    model.fit(train_gen,
+              validation_data=val_gen,
+              epochs=120,
+              initial_epoch=60,
+              callbacks=[tensorboard_callback])

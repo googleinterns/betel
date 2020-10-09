@@ -28,7 +28,7 @@ class DataSetBuilder(metaclass=abc.ABCMeta):
         self._input_dir = input_dir
         self._input_file = input_dir / utils.SCRAPER_INFO_FILE_NAME
 
-        normalised_split_ratio = (elem / sum(split_ratio) for elem in split_ratio)
+        normalised_split_ratio = tuple(elem / sum(split_ratio) for elem in split_ratio)
         self._train_ratio, self._val_ratio, self._test_ratio = normalised_split_ratio
 
     def split(self, data: pd.DataFrame) -> Dict[str, pd.DataFrame]:
