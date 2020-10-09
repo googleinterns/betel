@@ -1,5 +1,6 @@
 import shutil
 import pathlib
+from typing import List, Optional
 import pandas as pd
 from betel import utils
 from betel import info_files_helpers
@@ -11,7 +12,7 @@ class ClassifierDataSetBuilder(data_set_builder.DataSetBuilder):
 
     def __init__(self, input_dir: pathlib.Path, storage_dir: pathlib.Path,
                  split_ratio: (float, float, float) = (0.7, 0.15, 0.15),
-                 classes: [str] = None):
+                 classes: Optional[List[str]] = None):
         """Constructor.
 
         :param input_dir: data to be split (output of the scraper,
@@ -20,7 +21,8 @@ class ClassifierDataSetBuilder(data_set_builder.DataSetBuilder):
         :param storage_dir: storage directory for split data sets
         :param split_ratio: the ratio for train-validation-test data sets
         :param classes: the classes desired for the classifier (should be
-        Google Play Store categories)
+        Google Play Store categories); default: all categories found in
+        the input data
         """
         super().__init__(input_dir, storage_dir, split_ratio)
 
